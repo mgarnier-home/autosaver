@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/mgarnier-home/utils/common"
@@ -118,12 +119,15 @@ func save(appConfig *config.AppConfigFile) error {
 	logger.Infof("Starting backup")
 	var err error
 
+	encryptedFileName := appConfig.FileName + ".gpg"
+	// Les archives sont écrites hors volume : sans ce nettoyage, elles s'accumulent dans le conteneur.
+	defer os.Remove(appConfig.FileName)
+	defer os.Remove(encryptedFileName)
+
 	err = zipFolder(appConfig.BackupSrc, appConfig.FileName)
 	if err != nil {
 		return err
 	}
-
-	encryptedFileName := appConfig.FileName + ".gpg"
 
 	password, err := encryptFile(appConfig.FileName, encryptedFileName)
 	if err != nil {
