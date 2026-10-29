@@ -55,6 +55,11 @@ func getAppEnvConfig() (appEnvConfig *AppEnvConfig) {
 		panic(err)
 	}
 
+	appConfig := appEnvConfig.AppConfig
+	if appConfig.Mail == nil || appConfig.FileName == "" || appConfig.BackupSrc == "" || appConfig.RemoteDest == nil {
+		log.Fatalf("Invalid config file %s: mail, fileName, backupSrc and remoteDest are required", appEnvConfig.ConfigFilePath)
+	}
+
 	if appEnvConfig.AppConfig.KeepDuration == 0 {
 		appEnvConfig.AppConfig.KeepDuration = 14 // default: 30 days
 	}
