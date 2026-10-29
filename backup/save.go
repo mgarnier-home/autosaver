@@ -3,6 +3,8 @@ package backup
 import (
 	"context"
 	"fmt"
+	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/mgarnier-home/utils/common"
@@ -19,35 +21,22 @@ type Execution struct {
 	TimeFormatted string
 }
 
-var running bool = false
+var running atomic.Bool
 
-var LastExecution *Execution = &Execution{
-	Success:       false,
-	Duration:      time.Duration(0),
-	TimeFormatted: "",
-}
-
-func formatDuration(d time.Duration) string {
-	// Calculate total minutes and seconds
-	totalMinutes := int(d.Minutes())
-	minutes := totalMinutes % 60
-	seconds := int(d.Seconds()) % 60
-
-	// Format as mm:ss
-	return fmt.Sprintf("%02dm %02ds", minutes, seconds)
-}
+// LastExecution reste nil tant qu'aucune sauvegarde n'a tourné depuis le démarrage.
+var LastExecution atomic.Pointer[Execution]
 
 func RunSave(appConfig *config.AppConfigFile) bool {
-	if running {
+	// CompareAndSwap : deux /run simultanés ne peuvent pas lancer deux sauvegardes sur le même fichier.
+	if !running.CompareAndSwap(false, true) {
 		return false
 	}
-	running = true
 
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
 
 		defer func() {
-			running = false
+			running.Store(false)
 			cancel()
 		}()
 
@@ -69,12 +58,16 @@ func RunSave(appConfig *config.AppConfigFile) bool {
 
 		err := save(appConfig)
 
-		LastExecution.Duration = time.Since(timeStart)
-		LastExecution.TimeFormatted = formatDuration(LastExecution.Duration)
-		LastExecution.Success = err == nil
+		duration := time.Since(timeStart)
+		execution := &Execution{
+			Success:       err == nil,
+			Duration:      duration,
+			TimeFormatted: duration.Round(time.Second).String(),
+		}
+		LastExecution.Store(execution)
 
 		if err != nil {
-			logger.Errorf("Failed to save: %s in %s", err, LastExecution.TimeFormatted)
+			logger.Errorf("Failed to save: %s in %s", err, execution.TimeFormatted)
 
 			err = external.SendMail(
 				appConfig.Mail,
@@ -88,7 +81,7 @@ func RunSave(appConfig *config.AppConfigFile) bool {
 
 			err = ntfy.SendNotification(
 				"Autosaver",
-				fmt.Sprintf("🔴 Backup of %s failed in %s", appConfig.FileName, LastExecution.TimeFormatted),
+				fmt.Sprintf("🔴 Backup of %s failed in %s", appConfig.FileName, execution.TimeFormatted),
 				"bomb",
 			)
 			if err != nil {
@@ -99,7 +92,7 @@ func RunSave(appConfig *config.AppConfigFile) bool {
 		} else {
 			err = ntfy.SendNotification(
 				"Autosaver",
-				fmt.Sprintf("🟢 Backup of %s success in %s", appConfig.FileName, LastExecution.TimeFormatted),
+				fmt.Sprintf("🟢 Backup of %s success in %s", appConfig.FileName, execution.TimeFormatted),
 				"partying_face",
 			)
 			if err != nil {
@@ -118,12 +111,15 @@ func save(appConfig *config.AppConfigFile) error {
 	logger.Infof("Starting backup")
 	var err error
 
+	encryptedFileName := appConfig.FileName + ".gpg"
+	// Les archives sont écrites hors volume : sans ce nettoyage, elles s'accumulent dans le conteneur.
+	defer os.Remove(appConfig.FileName)
+	defer os.Remove(encryptedFileName)
+
 	err = zipFolder(appConfig.BackupSrc, appConfig.FileName)
 	if err != nil {
 		return err
 	}
-
-	encryptedFileName := appConfig.FileName + ".gpg"
 
 	password, err := encryptFile(appConfig.FileName, encryptedFileName)
 	if err != nil {
@@ -138,16 +134,6 @@ func save(appConfig *config.AppConfigFile) error {
 	)
 	if err != nil {
 		logger.Errorf("Failed to send mail: %s", err)
-	}
-
-	if appConfig.LocalDest != "" {
-		err = external.CopyToLocal(
-			appConfig.LocalDest,
-			appConfig.FileName,
-		)
-		if err != nil {
-			return err
-		}
 	}
 
 	if appConfig.RemoteDest != nil {

@@ -1,7 +1,7 @@
 # autosaver
 
-Service de sauvegarde : zippe et chiffre un dossier, puis copie l'archive en local et/ou sur un
-hôte distant en SFTP. Une sauvegarde se lance avec `GET /run` ; `GET /last` donne le résultat de la
+Service de sauvegarde : zippe et chiffre un dossier, puis copie l'archive sur un hôte distant en
+SFTP. Une sauvegarde se lance avec `GET /run` ; `GET /last` donne le résultat de la
 dernière exécution.
 
 ## Configuration

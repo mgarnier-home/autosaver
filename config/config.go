@@ -11,7 +11,6 @@ type AppConfigFile struct {
 	Mail         *MailConfig       `yaml:"mail"`
 	FileName     string            `yaml:"fileName"`
 	BackupSrc    string            `yaml:"backupSrc"`
-	LocalDest    string            `yaml:"localDest"`
 	RemoteDest   *RemoteDestConfig `yaml:"remoteDest"`
 	KeepDuration int               `yaml:"keepDuration"` // in days
 }
@@ -53,11 +52,15 @@ func getAppEnvConfig() (appEnvConfig *AppEnvConfig) {
 	appEnvConfig.AppConfig, err = common.ReadYamlFile[AppConfigFile](appEnvConfig.ConfigFilePath)
 	if err != nil {
 		log.Fatalf("Error reading config file: %v", err)
-		panic(err)
+	}
+
+	appConfig := appEnvConfig.AppConfig
+	if appConfig.Mail == nil || appConfig.FileName == "" || appConfig.BackupSrc == "" || appConfig.RemoteDest == nil {
+		log.Fatalf("Invalid config file %s: mail, fileName, backupSrc and remoteDest are required", appEnvConfig.ConfigFilePath)
 	}
 
 	if appEnvConfig.AppConfig.KeepDuration == 0 {
-		appEnvConfig.AppConfig.KeepDuration = 14 // default: 30 days
+		appEnvConfig.AppConfig.KeepDuration = 14 // jours
 	}
 
 	return appEnvConfig

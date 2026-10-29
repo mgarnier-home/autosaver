@@ -64,3 +64,22 @@ func TestDeleteOldFoldersMissingDir(t *testing.T) {
 		t.Fatal("erreur attendue pour un dossier inexistant")
 	}
 }
+
+func osReadDir(path string) ([]os.FileInfo, error) {
+	//function to cast os.ReadDir to os.FileInfo
+	// os.ReadDir returns a slice of os.DirEntry, we need to convert it to []os.FileInfo
+	dirs, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var fileInfos []os.FileInfo
+	for _, dir := range dirs {
+		info, err := dir.Info()
+		if err != nil {
+			return nil, err
+		}
+		fileInfos = append(fileInfos, info)
+	}
+	return fileInfos, nil
+}

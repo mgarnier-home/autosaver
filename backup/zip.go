@@ -71,7 +71,6 @@ func zipFolderWithProgress(
 	defer zipFile.Close()
 
 	zipWriter := zip.NewWriter(zipFile)
-	defer zipWriter.Close()
 
 	totalWritten := int64(0)
 	totalSize, err := common.GetDirSize(folderPath)
@@ -138,5 +137,10 @@ func zipFolderWithProgress(
 		return fmt.Errorf("failed to zip files: %w", err)
 	}
 
-	return nil
+	// Close écrit l'index du zip : sans lui, l'archive est illisible.
+	if err := zipWriter.Close(); err != nil {
+		return fmt.Errorf("failed to finalize zip: %w", err)
+	}
+
+	return zipFile.Close()
 }

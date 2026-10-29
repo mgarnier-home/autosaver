@@ -6,7 +6,7 @@ require (
 	github.com/ProtonMail/gopenpgp/v3 v3.2.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/gorilla/mux v1.8.1
-	github.com/mgarnier-home/utils v1.2.0
+	github.com/mgarnier-home/utils v1.3.0
 	github.com/pkg/sftp v1.13.10
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 )
