@@ -14,6 +14,7 @@ import (
 	sftpUtils "github.com/mgarnier-home/utils/ssh/sftp"
 	"github.com/pkg/sftp"
 	"mgarnier11.fr/go/autosaver/config"
+	"mgarnier11.fr/go/autosaver/stats"
 )
 
 func createBackupFolder(
@@ -80,7 +81,8 @@ func deleteOldFolders(
 	return nil
 }
 
-func CopyToRemote(remoteDest *config.RemoteDestConfig, srcFile string) error {
+func CopyToRemote(remoteDest *config.RemoteDestConfig, srcFile string, rec *stats.Store) error {
+	rec.Step("upload")
 	logger.Infof("Copying backup to remote dest")
 
 	sshClient, err := sshutils.GetSSHClient(
@@ -120,6 +122,7 @@ func CopyToRemote(remoteDest *config.RemoteDestConfig, srcFile string) error {
 		srcFile,
 		filepath.Join(remoteDest.SSHPath, common.GetDateOfDay(), filepath.Base(srcFile)),
 		func(current int64, percent float64, total int64) {
+			rec.Progress(percent)
 			if percent-lastCopyPercent > 1 {
 				lastCopyPercent = percent
 				logger.Infof("Copying backup to remote dest: %d", int(percent))
@@ -134,6 +137,7 @@ func CopyToRemote(remoteDest *config.RemoteDestConfig, srcFile string) error {
 	logger.Infof("Successfully copied backup to remote dest")
 
 	// Après l'envoi seulement : une série d'échecs ne doit pas effacer les sauvegardes existantes.
+	rec.Step("cleanup")
 	err = deleteOldFolders(
 		sftpClient.ReadDir,
 		sftpClient.RemoveAll,

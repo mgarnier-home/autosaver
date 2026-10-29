@@ -13,6 +13,7 @@ import (
 	"github.com/mgarnier-home/utils/ntfy"
 	"mgarnier11.fr/go/autosaver/config"
 	"mgarnier11.fr/go/autosaver/external"
+	"mgarnier11.fr/go/autosaver/stats"
 )
 
 type Execution struct {
@@ -25,6 +26,9 @@ var running atomic.Bool
 
 // LastExecution reste nil tant qu'aucune sauvegarde n'a tourné depuis le démarrage.
 var LastExecution atomic.Pointer[Execution]
+
+// Stats est ouvert par main avant le démarrage du serveur.
+var Stats *stats.Store
 
 func RunSave(appConfig *config.AppConfigFile) bool {
 	// CompareAndSwap : deux /run simultanés ne peuvent pas lancer deux sauvegardes sur le même fichier.
@@ -56,7 +60,9 @@ func RunSave(appConfig *config.AppConfigFile) bool {
 
 		timeStart := time.Now()
 
-		err := save(appConfig)
+		Stats.Start()
+		err := save(appConfig, Stats)
+		Stats.Finish(err)
 
 		duration := time.Since(timeStart)
 		execution := &Execution{
@@ -106,7 +112,7 @@ func RunSave(appConfig *config.AppConfigFile) bool {
 	return true
 }
 
-func save(appConfig *config.AppConfigFile) error {
+func save(appConfig *config.AppConfigFile, rec *stats.Store) error {
 
 	logger.Infof("Starting backup")
 	var err error
@@ -116,14 +122,20 @@ func save(appConfig *config.AppConfigFile) error {
 	defer os.Remove(appConfig.FileName)
 	defer os.Remove(encryptedFileName)
 
-	err = zipFolder(appConfig.BackupSrc, appConfig.FileName)
+	rec.Step("zip")
+	sourceBytes, err := zipFolder(appConfig.BackupSrc, appConfig.FileName, rec)
 	if err != nil {
 		return err
 	}
+	rec.SetSourceBytes(sourceBytes)
 
-	password, err := encryptFile(appConfig.FileName, encryptedFileName)
+	rec.Step("encrypt")
+	password, err := encryptFile(appConfig.FileName, encryptedFileName, rec)
 	if err != nil {
 		return err
+	}
+	if info, err := os.Stat(encryptedFileName); err == nil {
+		rec.SetArchiveBytes(info.Size())
 	}
 
 	err = external.SendMail(
@@ -139,7 +151,8 @@ func save(appConfig *config.AppConfigFile) error {
 	if appConfig.RemoteDest != nil {
 		err = external.CopyToRemote(
 			appConfig.RemoteDest,
-			appConfig.FileName+".gpg",
+			encryptedFileName,
+			rec,
 		)
 		if err != nil {
 			return err

@@ -2,6 +2,8 @@ package config
 
 import (
 	"log"
+	"path/filepath"
+	"strings"
 
 	"github.com/mgarnier-home/utils/common"
 )
@@ -34,6 +36,7 @@ type RemoteDestConfig struct {
 type AppEnvConfig struct {
 	ServerPort     int
 	ConfigFilePath string
+	StatsFilePath  string
 	SSHPrivateKey  string
 
 	AppConfig *AppConfigFile
@@ -53,6 +56,9 @@ func getAppEnvConfig() (appEnvConfig *AppEnvConfig) {
 	if err != nil {
 		log.Fatalf("Error reading config file: %v", err)
 	}
+
+	// Fichier d'état des stats à côté de la config : config-atlas.yml -> config-atlas.stats.json.
+	appEnvConfig.StatsFilePath = strings.TrimSuffix(appEnvConfig.ConfigFilePath, filepath.Ext(appEnvConfig.ConfigFilePath)) + ".stats.json"
 
 	appConfig := appEnvConfig.AppConfig
 	if appConfig.Mail == nil || appConfig.FileName == "" || appConfig.BackupSrc == "" || appConfig.RemoteDest == nil {
