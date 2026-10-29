@@ -70,9 +70,7 @@ jobs:
         run: |
           docker buildx build \
             --build-arg "VERSION=$VERSION" \
-            --tag "mgarnier11/go-autosaver:$ARCH" \
-            --cache-from "type=registry,ref=registry.mgarnier11.fr/go-autosaver:buildcache-$ARCH" \
-            --cache-to "type=registry,ref=registry.mgarnier11.fr/go-autosaver:buildcache-$ARCH,mode=max" \
+            --tag "mgarnier11/autosaver:$ARCH" \
             --push \
             .
 
@@ -86,7 +84,7 @@ jobs:
           VERSION: ${{ needs.version.outputs.version }}
         run: |
           docker buildx imagetools create \
-            --tag "mgarnier11/go-autosaver:$VERSION" \
-            --tag mgarnier11/go-autosaver:latest \
-            mgarnier11/go-autosaver:amd64 \
-            mgarnier11/go-autosaver:arm64
+            --tag "mgarnier11/autosaver:$VERSION" \
+            --tag mgarnier11/autosaver:latest \
+            mgarnier11/autosaver:amd64 \
+            mgarnier11/autosaver:arm64
