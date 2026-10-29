@@ -52,7 +52,6 @@ func getAppEnvConfig() (appEnvConfig *AppEnvConfig) {
 	appEnvConfig.AppConfig, err = common.ReadYamlFile[AppConfigFile](appEnvConfig.ConfigFilePath)
 	if err != nil {
 		log.Fatalf("Error reading config file: %v", err)
-		panic(err)
 	}
 
 	appConfig := appEnvConfig.AppConfig
@@ -61,7 +60,7 @@ func getAppEnvConfig() (appEnvConfig *AppEnvConfig) {
 	}
 
 	if appEnvConfig.AppConfig.KeepDuration == 0 {
-		appEnvConfig.AppConfig.KeepDuration = 14 // default: 30 days
+		appEnvConfig.AppConfig.KeepDuration = 14 // jours
 	}
 
 	return appEnvConfig
