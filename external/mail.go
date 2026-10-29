@@ -1,8 +1,6 @@
 package external
 
 import (
-	"crypto/tls"
-
 	"gopkg.in/gomail.v2"
 
 	"mgarnier11.fr/go/autosaver/config"
@@ -16,7 +14,6 @@ func SendMail(
 ) error {
 
 	dialer := gomail.NewDialer(mailConfig.Host, mailConfig.Port, mailConfig.Login, mailConfig.Password)
-	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	message := gomail.NewMessage()
 	message.SetHeader("From", mailConfig.Login)
