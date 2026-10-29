@@ -70,10 +70,6 @@ func (s *Server) Start() error {
 
 	s.logger.Infof("Starting server on port %d", s.port)
 
-	fs := http.FileServer(http.Dir("frontend"))
-
-	router.PathPrefix("/").Handler(fs)
-
 	return http.ListenAndServe(fmt.Sprintf(":%d", s.port), router)
 
 }
