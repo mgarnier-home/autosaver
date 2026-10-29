@@ -7,9 +7,10 @@ import (
 	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/mgarnier-home/utils/common"
 	"github.com/mgarnier-home/utils/logger"
+	"mgarnier11.fr/go/autosaver/stats"
 )
 
-func encryptFile(zipFile, outputFile string) (string, error) {
+func encryptFile(zipFile, outputFile string, rec *stats.Store) (string, error) {
 	password, err := common.GenerateRandomString(20)
 
 	if err != nil {
@@ -26,6 +27,7 @@ func encryptFile(zipFile, outputFile string) (string, error) {
 		password,
 		func(written int, totalWritten int64, totalSize int64) {
 			encryptPercent = float64(totalWritten) / float64(totalSize) * 100
+			rec.Progress(encryptPercent)
 			if encryptPercent-lastEncryptPercent > 1 {
 				lastEncryptPercent = encryptPercent
 				logger.Infof("Encrypting backup: %d", int(encryptPercent))

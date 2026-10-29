@@ -6,9 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/ProtonMail/gopenpgp/v3/crypto"
 	"github.com/mgarnier-home/utils/logger"
+	"mgarnier11.fr/go/autosaver/stats"
 )
 
 func TestMain(m *testing.M) {
@@ -43,10 +45,19 @@ func TestZipEncryptRoundTrip(t *testing.T) {
 	zipPath := filepath.Join(out, "backup.zip")
 	gpgPath := zipPath + ".gpg"
 
-	if err := zipFolder(src, zipPath); err != nil {
+	rec := stats.Open(filepath.Join(out, "s.stats.json"), time.Now)
+	sourceBytes, err := zipFolder(src, zipPath, rec)
+	if err != nil {
 		t.Fatalf("zipFolder: %v", err)
 	}
-	password, err := encryptFile(zipPath, gpgPath)
+	contentBytes := 0
+	for _, content := range files {
+		contentBytes += len(content)
+	}
+	if sourceBytes < int64(contentBytes) {
+		t.Errorf("taille source %d, au moins %d attendus", sourceBytes, contentBytes)
+	}
+	password, err := encryptFile(zipPath, gpgPath, rec)
 	if err != nil {
 		t.Fatalf("encryptFile: %v", err)
 	}
@@ -115,11 +126,12 @@ func TestEncryptFileUsesFreshPassword(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p1, err := encryptFile(in, filepath.Join(dir, "out1"))
+	rec := stats.Open(filepath.Join(dir, "s.stats.json"), time.Now)
+	p1, err := encryptFile(in, filepath.Join(dir, "out1"), rec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	p2, err := encryptFile(in, filepath.Join(dir, "out2"))
+	p2, err := encryptFile(in, filepath.Join(dir, "out2"), rec)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -9,15 +9,16 @@ import (
 
 	"github.com/mgarnier-home/utils/common"
 	"github.com/mgarnier-home/utils/logger"
+	"mgarnier11.fr/go/autosaver/stats"
 )
 
-func zipFolder(backupSrc string, fileName string) error {
+func zipFolder(backupSrc string, fileName string, rec *stats.Store) (int64, error) {
 	filePercent, lastFilePercent := 0.0, 0.0
 	totalPercent, lastTotalPercent := 0.0, 0.0
 
 	logger.Infof("Zipping folder %s", backupSrc)
 
-	err := zipFolderWithProgress(
+	sourceBytes, err := zipFolderWithProgress(
 		backupSrc,
 		fileName,
 		func(
@@ -30,6 +31,7 @@ func zipFolder(backupSrc string, fileName string) error {
 		) {
 			filePercent = float64(fileWritten) / float64(fileSize) * 100
 			totalPercent = float64(totalWritten) / float64(totalSize) * 100
+			rec.Progress(totalPercent)
 
 			if math.Abs(filePercent-lastFilePercent) > 1 {
 				lastFilePercent = filePercent
@@ -44,12 +46,12 @@ func zipFolder(backupSrc string, fileName string) error {
 		})
 
 	if err != nil {
-		return fmt.Errorf("failed to zip folder: %w", err)
+		return 0, fmt.Errorf("failed to zip folder: %w", err)
 	}
 
 	logger.Infof("Successfully zipped folder")
 
-	return nil
+	return sourceBytes, nil
 }
 
 func zipFolderWithProgress(
@@ -63,10 +65,10 @@ func zipFolderWithProgress(
 		totalWritten int64,
 		totalSize int64,
 	),
-) error {
+) (int64, error) {
 	zipFile, err := os.Create(zipPath)
 	if err != nil {
-		return fmt.Errorf("failed to create zip file: %w", err)
+		return 0, fmt.Errorf("failed to create zip file: %w", err)
 	}
 	defer zipFile.Close()
 
@@ -75,7 +77,7 @@ func zipFolderWithProgress(
 	totalWritten := int64(0)
 	totalSize, err := common.GetDirSize(folderPath)
 	if err != nil {
-		return fmt.Errorf("failed to get folder size: %w", err)
+		return 0, fmt.Errorf("failed to get folder size: %w", err)
 	}
 
 	err = filepath.Walk(folderPath, func(filePath string, info os.FileInfo, err error) error {
@@ -134,13 +136,13 @@ func zipFolderWithProgress(
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to zip files: %w", err)
+		return 0, fmt.Errorf("failed to zip files: %w", err)
 	}
 
 	// Close écrit l'index du zip : sans lui, l'archive est illisible.
 	if err := zipWriter.Close(); err != nil {
-		return fmt.Errorf("failed to finalize zip: %w", err)
+		return 0, fmt.Errorf("failed to finalize zip: %w", err)
 	}
 
-	return zipFile.Close()
+	return totalSize, zipFile.Close()
 }

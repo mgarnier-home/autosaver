@@ -2,7 +2,9 @@
 
 Service de sauvegarde : zippe et chiffre un dossier, puis copie l'archive sur un hôte distant en
 SFTP. Une sauvegarde se lance avec `GET /run` ; `GET /last` donne le résultat de la
-dernière exécution.
+dernière exécution, et `GET /stats` l'historique des 30 dernières (JSON, format décrit dans
+`docs/superpowers/specs/2026-10-29-stats-design.md`). Cet historique est conservé dans
+`<config>.stats.json`, à côté du fichier de configuration.
 
 ## Configuration
 
