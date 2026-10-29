@@ -132,15 +132,6 @@ func CopyToRemote(remoteDest *config.RemoteDestConfig, srcFile string) error {
 		return fmt.Errorf("failed to create backup folder: %w", err)
 	}
 
-	err = deleteOldFolders(
-		sftpClient.ReadDir,
-		sftpClient.RemoveAll,
-		remoteDest.SSHPath,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to delete old folders: %w", err)
-	}
-
 	lastCopyPercent := 0.0
 
 	err = sftpUtils.LocalToRemoteProgress(
@@ -160,6 +151,16 @@ func CopyToRemote(remoteDest *config.RemoteDestConfig, srcFile string) error {
 		return fmt.Errorf("failed to copy backup: %w", err)
 	}
 	logger.Infof("Successfully copied backup to remote dest")
+
+	// Après l'envoi seulement : une série d'échecs ne doit pas effacer les sauvegardes existantes.
+	err = deleteOldFolders(
+		sftpClient.ReadDir,
+		sftpClient.RemoveAll,
+		remoteDest.SSHPath,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to delete old folders: %w", err)
+	}
 
 	return nil
 }
