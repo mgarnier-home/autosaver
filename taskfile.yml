@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+tasks:
+  download:
+    cmds:
+      - go mod download
+
+  build:
+    cmds:
+      - go build -ldflags="-X 'github.com/mgarnier-home/utils/buildinfo.Version=v0.0.0' -X 'github.com/mgarnier-home/utils/buildinfo.Commit=commitsha' -X 'github.com/mgarnier-home/utils/buildinfo.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)'" -o ./dist/autosaver
+
+  start:
+    env:
+      ENV_FILE_PATH: /mnt/dev/autosaver/.env
+    cmds:
+      - task: build
+      - ./dist/autosaver
+
+  test:
+    cmds:
+      - go clean -testcache
+      - go test -v ./...
+
