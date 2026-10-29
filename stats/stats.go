@@ -77,7 +77,7 @@ func Open(path string, now func() time.Time) *Store {
 	}
 
 	if started := s.state.CurrentStartedAt; started != nil {
-		finished := now().UTC()
+		finished := now().UTC().Truncate(time.Second)
 		s.record(Run{
 			StartedAt:       *started,
 			FinishedAt:      finished,
@@ -94,7 +94,7 @@ func (s *Store) Start() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	started := s.now().UTC()
+	started := s.now().UTC().Truncate(time.Second)
 	s.current = &Run{StartedAt: started, Steps: map[string]int64{}}
 	s.step = ""
 	s.state.CurrentStartedAt = &started
@@ -145,7 +145,7 @@ func (s *Store) Finish(err error) {
 	s.closeStep()
 
 	run := *s.current
-	run.FinishedAt = s.now().UTC()
+	run.FinishedAt = s.now().UTC().Truncate(time.Second)
 	run.DurationSeconds = seconds(run.FinishedAt.Sub(run.StartedAt))
 	run.Success = err == nil
 	if err != nil {
