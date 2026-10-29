@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -51,6 +52,8 @@ func (s *Server) Start() error {
 		}
 	})
 
+	router.HandleFunc("/stats", statsHandler)
+
 	router.HandleFunc("/last", func(w http.ResponseWriter, r *http.Request) {
 		lastExecution := backup.LastExecution.Load()
 		if lastExecution == nil {
@@ -72,4 +75,14 @@ func (s *Server) Start() error {
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", s.port), router)
 
+}
+
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := json.Marshal(backup.Stats.Snapshot())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
 }
