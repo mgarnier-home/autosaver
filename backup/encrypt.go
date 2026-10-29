@@ -65,7 +65,6 @@ func encryptFileWithPasswordWithProgress(inputPath, outputPath, password string,
 	if err != nil {
 		return err
 	}
-	defer writer.Close()
 
 	// Get the size of the input file for progress calculation
 	fileInfo, err := messageReader.Stat()
@@ -74,11 +73,19 @@ func encryptFileWithPasswordWithProgress(inputPath, outputPath, password string,
 	}
 	totalSize := fileInfo.Size()
 
-	common.CopyWithProgress(writer, messageReader, func(written int, total int64) {
+	_, err = common.CopyWithProgress(writer, messageReader, func(written int, total int64) {
 		if progressCallback != nil {
 			progressCallback(written, total, totalSize)
 		}
 	})
+	if err != nil {
+		return err
+	}
 
-	return nil
+	// Close écrit la fin du message chiffré : son erreur signale une archive tronquée.
+	if err := writer.Close(); err != nil {
+		return err
+	}
+
+	return ciphertextWriter.Close()
 }
