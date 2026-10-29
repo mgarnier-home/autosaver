@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/mgarnier-home/utils/common"
@@ -20,7 +21,7 @@ type Execution struct {
 	TimeFormatted string
 }
 
-var running bool = false
+var running atomic.Bool
 
 var LastExecution *Execution = &Execution{
 	Success:       false,
@@ -39,16 +40,16 @@ func formatDuration(d time.Duration) string {
 }
 
 func RunSave(appConfig *config.AppConfigFile) bool {
-	if running {
+	// CompareAndSwap : deux /run simultanés ne peuvent pas lancer deux sauvegardes sur le même fichier.
+	if !running.CompareAndSwap(false, true) {
 		return false
 	}
-	running = true
 
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
 
 		defer func() {
-			running = false
+			running.Store(false)
 			cancel()
 		}()
 
