@@ -50,8 +50,8 @@ github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWE
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mattn/go-runewidth v0.0.23 h1:7ykA0T0jkPpzSvMS5i9uoNn2Xy3R383f9HDx3RybWcw=
 github.com/mattn/go-runewidth v0.0.23/go.mod h1:XBkDxAl56ILZc9knddidhrOlY5R/pDhgLpndooCuJAs=
-github.com/mgarnier-home/utils v1.2.0 h1:1HlQqtK7wrESDxt4b9HDslZ9nY8ympuzCiGmlvQH3pg=
-github.com/mgarnier-home/utils v1.2.0/go.mod h1:WJlhnyJQoUkBF1l2AydzkhPXwTtShwlH1rAJUhePFBU=
+github.com/mgarnier-home/utils v1.3.0 h1:xPgQYpc0syUY3+jiaCHOX3rF99mzcOBrM2ZohZ1TYi0=
+github.com/mgarnier-home/utils v1.3.0/go.mod h1:sk7i0gNEuMmwE+5dxgxtqsblO8o6fSV4pdqGYW4Hi/I=
 github.com/muesli/termenv v0.16.0 h1:S5AlUN9dENB57rsbnkPyfdGuWIlkmzJjbFf0Tf5FWUc=
 github.com/muesli/termenv v0.16.0/go.mod h1:ZRfOIKPFDYQoDFF4Olj7/QJbW60Ol/kL1pU3VfY/Cnk=
 github.com/pkg/sftp v1.13.10 h1:+5FbKNTe5Z9aspU88DPIKJ9z2KZoaGCu6Sr6kKR/5mU=
