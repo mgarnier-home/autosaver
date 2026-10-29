@@ -23,11 +23,8 @@ type Execution struct {
 
 var running atomic.Bool
 
-var LastExecution *Execution = &Execution{
-	Success:       false,
-	Duration:      time.Duration(0),
-	TimeFormatted: "",
-}
+// LastExecution reste nil tant qu'aucune sauvegarde n'a tourné depuis le démarrage.
+var LastExecution atomic.Pointer[Execution]
 
 func formatDuration(d time.Duration) string {
 	// Calculate total minutes and seconds
@@ -71,12 +68,16 @@ func RunSave(appConfig *config.AppConfigFile) bool {
 
 		err := save(appConfig)
 
-		LastExecution.Duration = time.Since(timeStart)
-		LastExecution.TimeFormatted = formatDuration(LastExecution.Duration)
-		LastExecution.Success = err == nil
+		duration := time.Since(timeStart)
+		execution := &Execution{
+			Success:       err == nil,
+			Duration:      duration,
+			TimeFormatted: formatDuration(duration),
+		}
+		LastExecution.Store(execution)
 
 		if err != nil {
-			logger.Errorf("Failed to save: %s in %s", err, LastExecution.TimeFormatted)
+			logger.Errorf("Failed to save: %s in %s", err, execution.TimeFormatted)
 
 			err = external.SendMail(
 				appConfig.Mail,
@@ -90,7 +91,7 @@ func RunSave(appConfig *config.AppConfigFile) bool {
 
 			err = ntfy.SendNotification(
 				"Autosaver",
-				fmt.Sprintf("🔴 Backup of %s failed in %s", appConfig.FileName, LastExecution.TimeFormatted),
+				fmt.Sprintf("🔴 Backup of %s failed in %s", appConfig.FileName, execution.TimeFormatted),
 				"bomb",
 			)
 			if err != nil {
@@ -101,7 +102,7 @@ func RunSave(appConfig *config.AppConfigFile) bool {
 		} else {
 			err = ntfy.SendNotification(
 				"Autosaver",
-				fmt.Sprintf("🟢 Backup of %s success in %s", appConfig.FileName, LastExecution.TimeFormatted),
+				fmt.Sprintf("🟢 Backup of %s success in %s", appConfig.FileName, execution.TimeFormatted),
 				"partying_face",
 			)
 			if err != nil {
