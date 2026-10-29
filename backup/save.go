@@ -26,16 +26,6 @@ var running atomic.Bool
 // LastExecution reste nil tant qu'aucune sauvegarde n'a tourné depuis le démarrage.
 var LastExecution atomic.Pointer[Execution]
 
-func formatDuration(d time.Duration) string {
-	// Calculate total minutes and seconds
-	totalMinutes := int(d.Minutes())
-	minutes := totalMinutes % 60
-	seconds := int(d.Seconds()) % 60
-
-	// Format as mm:ss
-	return fmt.Sprintf("%02dm %02ds", minutes, seconds)
-}
-
 func RunSave(appConfig *config.AppConfigFile) bool {
 	// CompareAndSwap : deux /run simultanés ne peuvent pas lancer deux sauvegardes sur le même fichier.
 	if !running.CompareAndSwap(false, true) {
@@ -72,7 +62,7 @@ func RunSave(appConfig *config.AppConfigFile) bool {
 		execution := &Execution{
 			Success:       err == nil,
 			Duration:      duration,
-			TimeFormatted: formatDuration(duration),
+			TimeFormatted: duration.Round(time.Second).String(),
 		}
 		LastExecution.Store(execution)
 
