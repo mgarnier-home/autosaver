@@ -136,16 +136,6 @@ func save(appConfig *config.AppConfigFile) error {
 		logger.Errorf("Failed to send mail: %s", err)
 	}
 
-	if appConfig.LocalDest != "" {
-		err = external.CopyToLocal(
-			appConfig.LocalDest,
-			appConfig.FileName,
-		)
-		if err != nil {
-			return err
-		}
-	}
-
 	if appConfig.RemoteDest != nil {
 		err = external.CopyToRemote(
 			appConfig.RemoteDest,

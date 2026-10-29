@@ -11,7 +11,6 @@ type AppConfigFile struct {
 	Mail         *MailConfig       `yaml:"mail"`
 	FileName     string            `yaml:"fileName"`
 	BackupSrc    string            `yaml:"backupSrc"`
-	LocalDest    string            `yaml:"localDest"`
 	RemoteDest   *RemoteDestConfig `yaml:"remoteDest"`
 	KeepDuration int               `yaml:"keepDuration"` // in days
 }

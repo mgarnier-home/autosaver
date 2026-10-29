@@ -16,25 +16,6 @@ import (
 	"mgarnier11.fr/go/autosaver/config"
 )
 
-func osReadDir(path string) ([]os.FileInfo, error) {
-	//function to cast os.ReadDir to os.FileInfo
-	// os.ReadDir returns a slice of os.DirEntry, we need to convert it to []os.FileInfo
-	dirs, err := os.ReadDir(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var fileInfos []os.FileInfo
-	for _, dir := range dirs {
-		info, err := dir.Info()
-		if err != nil {
-			return nil, err
-		}
-		fileInfos = append(fileInfos, info)
-	}
-	return fileInfos, nil
-}
-
 func createBackupFolder(
 	stat func(string) (os.FileInfo, error),
 	mkdirAll func(string, os.FileMode) error,
@@ -161,55 +142,6 @@ func CopyToRemote(remoteDest *config.RemoteDestConfig, srcFile string) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete old folders: %w", err)
 	}
-
-	return nil
-}
-
-func CopyToLocal(localDest, srcFile string) error {
-	logger.Infof("Copying backup to local dest")
-
-	err := createBackupFolder(
-		os.Stat,
-		os.MkdirAll,
-		filepath.Join(localDest, common.GetDateOfDay()),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create backup folder: %w", err)
-	}
-
-	err = deleteOldFolders(
-		osReadDir,
-		os.RemoveAll,
-		filepath.Join(localDest, common.GetDateOfDay()),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to delete old folders: %w", err)
-	}
-
-	lastCopyPercent := 0.0
-
-	err = common.ParallelCopyFile(
-		srcFile,
-		filepath.Join(localDest, common.GetDateOfDay(), filepath.Base(srcFile)),
-		func(s string) (common.ReadWriterAt, error) { return os.Open(s) },
-		func(s string) (common.ReadWriterAt, error) { return os.Create(s) },
-		func(written int, totalWritten, totalSize int64) {
-			if totalWritten > 0 {
-				percent := float64(totalWritten) / float64(totalSize) * 100.0
-
-				if percent-lastCopyPercent > 1 {
-					lastCopyPercent = percent
-					logger.Infof("Copying backup to local dest: %d", int(percent))
-				}
-			}
-		},
-	)
-
-	if err != nil {
-		return fmt.Errorf("failed to copy backup: %w", err)
-	}
-
-	logger.Infof("Successfully copied backup to local dest")
 
 	return nil
 }
